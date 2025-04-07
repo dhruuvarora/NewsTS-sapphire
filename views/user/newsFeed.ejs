@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Feed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+
+        header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .news-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-gap: 2rem;
+        }
+
+        .news-card {
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .news-card h2 {
+            padding: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .news-image {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .news-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .news-card p {
+            padding: 1rem;
+        }
+
+        .news-date {
+            padding: 0 1rem 1rem;
+            color: #666;
+        }
+
+        .no-news {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 2rem;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+
+        footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* Edit mode styles */
+        .edit-mode-container {
+            display: none;
+            padding: 1rem;
+        }
+
+        .edit-form-group {
+            margin-bottom: 1rem;
+        }
+
+        .edit-form-group label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-weight: bold;
+        }
+
+        .edit-form-group input,
+        .edit-form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        .edit-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+
+        .edit-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .edit-btn:hover {
+            background-color: #218838;
+        }
+
+        .cancel-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .cancel-btn:hover {
+            background-color: #c82333;
+        }
+
+        .view-mode-controls {
+            padding: 0 1rem 1rem;
+            text-align: right;
+        }
+
+        .edit-trigger-btn {
+            display: inline-block;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Latest News</h1>
+        <div style="margin-top: 10px;">
+            <a href="/admin/add" style="color: white; text-decoration: none; background-color: #0056b3; padding: 5px 10px; border-radius: 3px;">Add News</a>
+        </div>
+    </header>
+    
+    <main>
+        <div class="news-container">
+            <% if (news && news.length > 0) { %>
+                <% news.forEach(item => { %>
+                    <div class="news-card" id="news-card-<%= item.id %>">
+                        <!-- View Mode -->
+                        <div class="view-mode">
+                            <h2 class="news-title"><%= item.title %></h2>
+                            <div class="news-image">
+                                <img src="/news/image/<%= item.id %>" alt="<%= item.title %>">
+                            </div>
+                            <p class="news-description"><%= item.description %></p>
+                            <div class="news-date">
+                                <small>Published: <%= item.created_at.toLocaleString() %></small>
+                            </div>
+                            <div class="view-mode-controls">
+                                <button class="edit-trigger-btn" onclick="toggleEditMode('<%= item.id %>')">Edit</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Edit Mode (Hidden by default) -->
+                        <div class="edit-mode-container" id="edit-mode-<%= item.id %>">
+                            <form id="edit-form-<%= item.id %>" enctype="multipart/form-data">
+                                <div class="edit-form-group">
+                                    <label for="title-<%= item.id %>">Title</label>
+                                    <input type="text" id="title-<%= item.id %>" name="title" value="<%= item.title %>" required>
+                                </div>
+                                
+                                <div class="edit-form-group">
+                                    <label for="description-<%= item.id %>">Description</label>
+                                    <textarea id="description-<%= item.id %>" name="description" rows="6" required><%= item.description %></textarea>
+                                </div>
+                                
+                                <div class="edit-form-group">
+                                    <label for="image-<%= item.id %>">Update Image (optional)</label>
+                                    <input type="file" id="image-<%= item.id %>" name="image" accept="image/*">
+                                    <small style="display: block; margin-top: 5px; color: #666;">Leave empty to keep the current image</small>
+                                </div>
+                                
+                                <div class="edit-buttons">
+                                    <button type="button" class="cancel-btn" onclick="toggleEditMode('<%= item.id %>')">Cancel</button>
+                                    <button type="button" class="edit-btn" onclick="saveChanges('<%= item.id %>')">Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <p class="no-news">No news available at the moment.</p>
+            <% } %>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; <%= new Date().getFullYear() %> News App</p>
+    </footer>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        
+        // Listen for new news events
+        socket.on('newNews', (newNews) => {
+            // Reload the page when new news is added
+            location.reload();
+        });
+        
+        // Listen for updated news events
+        socket.on('newsUpdated', (updatedNews) => {
+            // Reload the page when news is updated
+            location.reload();
+        });
+        
+        // Toggle between view mode and edit mode
+        function toggleEditMode(newsId) {
+            const viewMode = document.querySelector(`#news-card-${newsId} .view-mode`);
+            const editMode = document.querySelector(`#edit-mode-${newsId}`);
+            
+            if (editMode.style.display === 'block') {
+                viewMode.style.display = 'block';
+                editMode.style.display = 'none';
+            } else {
+                viewMode.style.display = 'none';
+                editMode.style.display = 'block';
+            }
+        }
+        
+        // Save changes using AJAX
+function saveChanges(newsId) {
+    const form = document.getElementById(`edit-form-${newsId}`);
+    const formData = new FormData(form);
+    
+    console.log(`Sending update request for news ID: ${newsId}`);
+    console.log(`Request URL: /news/update/${newsId}`);
+    
+    // Send AJAX request to update the news with absolute path
+    fetch(`/news/update/${newsId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        
+        // Log the raw response for debugging
+        return response.text().then(text => {
+            console.log('Raw response:', text);
+            try {
+                if (text.trim() === '') {
+                    throw new Error('Empty response received');
+                }
+                const data = JSON.parse(text);
+                console.log('Response data:', data);
+                return data;
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', text);
+                throw new Error('Invalid JSON response: ' + text);
+            }
+        });
+    })
+    .then(data => {
+        if (data.success) {
+            // Update the view mode with new data
+            const newsCard = document.querySelector(`#news-card-${newsId}`);
+            newsCard.querySelector('.news-title').textContent = formData.get('title');
+            newsCard.querySelector('.news-description').textContent = formData.get('description');
+            
+            // If a new image was uploaded, refresh the page to show it
+            if (formData.get('image') && formData.get('image').size > 0) {
+                location.reload();
+            } else {
+                // Switch back to view mode
+                toggleEditMode(newsId);
+            }
+            
+            alert('News updated successfully!');
+        } else {
+            alert('Error updating news: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating news: ' + error.message);
+    });
+}
+    </script>
+</body>
+</html>
